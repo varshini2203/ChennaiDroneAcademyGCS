@@ -132,8 +132,10 @@ ToolIndicatorPage {
                 text: qsTr("Logout")
                 imageResource: "/res/OpenDoor.svg"
                 onClicked: {
+                    console.log("[AUTH-DEBUG] toolbar Logout clicked, loggedIn before =", AuthController.loggedIn)
                     mainWindow.closeIndicatorDrawer()
                     AuthController.logout()
+                    console.log("[AUTH-DEBUG] toolbar Logout: AuthController.logout() returned, loggedIn after =", AuthController.loggedIn)
                 }
             }
 

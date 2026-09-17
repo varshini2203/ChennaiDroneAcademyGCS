@@ -39,6 +39,7 @@ ApplicationWindow {
     Connections {
         target: AuthController
         function onLoggedInChanged() {
+            console.log("[AUTH-DEBUG] MainWindow: loggedInChanged fired, loggedIn =", AuthController.loggedIn)
             if (AuthController.loggedIn) {
                 firstRunPromptManager.nextPrompt()
             }
@@ -868,11 +869,6 @@ ApplicationWindow {
         Behavior on opacity {
             NumberAnimation {
                 duration: 500
-                onFinished: {
-                    if (splashScreenOverlay.opacity === 0) {
-                        mainWindow._splashDone = true
-                    }
-                }
             }
         }
 
@@ -880,7 +876,11 @@ ApplicationWindow {
             interval:   1500
             running:    true
             repeat:     false
-            onTriggered: splashScreenOverlay.opacity = 0
+            onTriggered: {
+                console.log("[AUTH-DEBUG] splash timer fired, setting opacity=0 and _splashDone=true directly")
+                splashScreenOverlay.opacity = 0
+                mainWindow._splashDone = true
+            }
         }
     }
 
@@ -923,7 +923,10 @@ ApplicationWindow {
                 text: qsTr("Are you sure you want to log out?")
             }
 
-            onAccepted: AuthController.logout()
+            onAccepted: {
+                console.log("[AUTH-DEBUG] logoutConfirmDialog accepted, calling AuthController.logout()")
+                AuthController.logout()
+            }
         }
     }
 
@@ -946,9 +949,14 @@ ApplicationWindow {
 
         property bool showingRegister: false
 
+        onVisibleChanged: console.log("[AUTH-DEBUG] authOverlay: visible =", visible, " active =", active, " loggedIn =", AuthController.loggedIn, " splashDone =", mainWindow._splashDone)
+
         // Always land back on the Login page (not a stale Register page) whenever
         // the overlay reappears, e.g. after AuthController.logout().
-        onActiveChanged: if (active) showingRegister = false
+        onActiveChanged: {
+            console.log("[AUTH-DEBUG] authOverlay: active =", active)
+            if (active) showingRegister = false
+        }
 
         // Force any open indicator drawer / popup closed immediately (no exit
         // transition) the moment we log out, so it can't linger on top of the
@@ -956,6 +964,7 @@ ApplicationWindow {
         Connections {
             target: AuthController
             function onLoggedInChanged() {
+                console.log("[AUTH-DEBUG] authOverlay Connections: loggedInChanged, loggedIn =", AuthController.loggedIn)
                 if (!AuthController.loggedIn) {
                     mainWindow.closeIndicatorDrawer()
                 }

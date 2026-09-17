@@ -1,6 +1,7 @@
 #include "AuthController.h"
 
 #include <QtCore/QCryptographicHash>
+#include <QtCore/QDebug>
 #include <QtCore/QRegularExpression>
 #include <QtCore/QSettings>
 
@@ -106,7 +107,10 @@ bool AuthController::registerUser(const QString &username,
 
 void AuthController::logout()
 {
+    qDebug() << "[AUTH-DEBUG] AuthController::logout() called, instance =" << this
+             << " loggedIn before =" << _loggedIn;
     _currentUser.clear();
     _loggedIn = false;
     emit loggedInChanged();
+    qDebug() << "[AUTH-DEBUG] AuthController::logout() finished, loggedIn after =" << _loggedIn;
 }
