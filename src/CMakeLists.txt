@@ -36,6 +36,7 @@ endif()
 add_subdirectory(ADSB)
 add_subdirectory(AnalyzeView)
 add_subdirectory(API)
+add_subdirectory(Auth)
 add_subdirectory(AutoPilotPlugins)
 add_subdirectory(Camera)
 add_subdirectory(Comms)
@@ -134,6 +135,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         # QGC Modules
         AnalyzeViewModule
         AppSettingsModule
+        AuthModule
         AutoPilotPluginsCommonModule
         FactControlsModule
         FirstRunPromptDialogsModule

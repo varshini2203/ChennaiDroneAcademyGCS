@@ -1,5 +1,6 @@
 #include "QGCCorePlugin.h"
 #include "AppSettings.h"
+#include "AuthController.h"
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
 #include "MavlinkSettings.h"
 #endif
@@ -52,8 +53,8 @@ Q_APPLICATION_STATIC(QGCCorePlugin, _qgcCorePluginInstance);
 
 QGCCorePlugin::QGCCorePlugin(QObject *parent)
     : QObject(parent)
-    , _defaultOptions(new QGCOptions(this))
-    , _emptyCustomMapItems(new QmlObjectListModel(this))
+      , _defaultOptions(new QGCOptions(this))
+      , _emptyCustomMapItems(new QmlObjectListModel(this))
 {
     qCDebug(QGCCorePluginLog) << this;
 }
@@ -74,10 +75,10 @@ QGCCorePlugin *QGCCorePlugin::instance()
 
 const QVariantList &QGCCorePlugin::analyzePages()
 {
-    // Log Viewer is excluded on mobile (Android/iOS) because parsing large log files
-    // (e.g. 900 MB ULog files with 1000+ fields) exhausts the mobile heap, causing
-    // OOM crashes. Proper mobile support requires time-bucketed downsampling and will
-    // be addressed in a future major release.
+   // Log Viewer is excluded on mobile (Android/iOS) because parsing large log files
+   // (e.g. 900 MB ULog files with 1000+ fields) exhausts the mobile heap, causing
+   // OOM crashes. Proper mobile support requires time-bucketed downsampling and will
+   // be addressed in a future major release.
 #if defined(Q_OS_ANDROID) || defined(Q_OS_IOS)
     static const QVariantList analyzeList = {
 #else
@@ -129,7 +130,7 @@ const QmlObjectListModel *QGCCorePlugin::customMapItems()
 void QGCCorePlugin::adjustSettingMetaData(const QString &settingsGroup, FactMetaData &metaData, bool &userVisible)
 {
 #ifdef Q_OS_ANDROID
-    // 3D view rendering is too flaky on Android GPUs/drivers; force the
+   // 3D view rendering is too flaky on Android GPUs/drivers; force the
     // feature off. Hiding the setting also forces it to its default value
     // (false) regardless of any previously saved user setting.
     if ((settingsGroup == Viewer3DSettings::settingsGroup) && (metaData.name() == Viewer3DSettings::enabledName)) {
@@ -176,9 +177,9 @@ void QGCCorePlugin::adjustSettingMetaData(const QString &settingsGroup, FactMeta
 QString QGCCorePlugin::showAdvancedUIMessage() const
 {
     return tr("WARNING: You are about to enter Advanced Mode. "
-              "If used incorrectly, this may cause your vehicle to malfunction thus voiding your warranty. "
-              "You should do so only if instructed by customer support. "
-              "Are you sure you want to enable Advanced Mode?");
+        "If used incorrectly, this may cause your vehicle to malfunction thus voiding your warranty. "
+        "You should do so only if instructed by customer support. "
+        "Are you sure you want to enable Advanced Mode?");
 }
 
 void QGCCorePlugin::factValueGridCreateDefaultSettings(FactValueGrid* factValueGrid)
@@ -199,7 +200,7 @@ void QGCCorePlugin::factValueGridCreateDefaultSettings(FactValueGrid* factValueG
         int rowIndex = 0;
         int colIndex = 0;
 
-        // first cell
+                // first cell
         QmlObjectListModel* column = factValueGrid->columns()->value<QmlObjectListModel*>(colIndex++);
         InstrumentValueData* value = column->value<InstrumentValueData*>(rowIndex);
         value->setFact("Vehicle", "AltitudeRelative");
@@ -207,7 +208,7 @@ void QGCCorePlugin::factValueGridCreateDefaultSettings(FactValueGrid* factValueG
         value->setText(value->fact()->shortDescription());
         value->setShowUnits(true);
 
-        // second cell
+                // second cell
         column = factValueGrid->columns()->value<QmlObjectListModel*>(colIndex++);
         value = column->value<InstrumentValueData*>(rowIndex);
         if (includeFWValues) {
@@ -300,6 +301,7 @@ QQmlApplicationEngine *QGCCorePlugin::createQmlApplicationEngine(QObject *parent
     QQmlApplicationEngine *const qmlEngine = new QQmlApplicationEngine(parent);
     qmlEngine->addImportPath(QStringLiteral("qrc:/qml"));
     qmlEngine->rootContext()->setContextProperty(QStringLiteral("joystickManager"), JoystickManager::instance());
+    qmlEngine->rootContext()->setContextProperty(QStringLiteral("AuthController"), AuthController::instance());
     return qmlEngine;
 }
 
@@ -334,7 +336,7 @@ const QVariantList &QGCCorePlugin::toolBarIndicators()
         {
             QVariant::fromValue(QUrl::fromUserInput(QStringLiteral("qrc:/qml/QGroundControl/Toolbar/RTKGPSIndicator.qml"))),
         }
-    );
+        );
 
     return toolBarIndicatorList;
 }
@@ -362,10 +364,10 @@ QVariantList QGCCorePlugin::firstRunPromptsToShow()
 QString QGCCorePlugin::firstRunPromptResource(int id) const
 {
     switch (id) {
-    case kInitialSetupPromptId:
-        return QStringLiteral("/qml/QGroundControl/FirstRunPromptDialogs/InitialSetupPrompt.qml");
-    default:
-        return QString();
+        case kInitialSetupPromptId:
+            return QStringLiteral("/qml/QGroundControl/FirstRunPromptDialogs/InitialSetupPrompt.qml");
+        default:
+            return QString();
     }
 }
 

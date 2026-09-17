@@ -4,6 +4,7 @@ import QtQuick.Layouts
 
 import QGroundControl
 import QGroundControl.Controls
+import QGroundControl.Auth
 
 ToolIndicatorPage {
     id: root
@@ -120,6 +121,19 @@ ToolIndicatorPage {
                         // run, matching the desktop window-close behavior.
                         mainWindow.close()
                     }
+                }
+            }
+
+            SubMenuButton {
+                id: logoutButton
+                objectName: "toolbar_viewLogout"
+                implicitHeight: root._toolButtonHeight
+                Layout.fillWidth: true
+                text: qsTr("Logout")
+                imageResource: "/res/OpenDoor.svg"
+                onClicked: {
+                    mainWindow.closeIndicatorDrawer()
+                    AuthController.logout()
                 }
             }
 

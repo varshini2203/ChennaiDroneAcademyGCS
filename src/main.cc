@@ -5,7 +5,7 @@
 #include "Platform.h"
 
 #ifdef QGC_UNITTEST_BUILD
-    #include "UnitTestList.h"
+#include "UnitTestList.h"
 #endif
 
 QGC_LOGGING_CATEGORY_ON(MainLog, "Main")
@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
         return *exitCode;
     }
 
-    // --- Platform initialization ---
+            // --- Platform initialization ---
     if (const auto exitCode = Platform::initialize(argc, argv, args)) {
         return *exitCode;
     }
@@ -31,40 +31,40 @@ int main(int argc, char *argv[])
 
     app.init();
 
-    // Apply after installFilter() (called during app.init) so rules aren't overwritten.
+            // Apply after installFilter() (called during app.init) so rules aren't overwritten.
     LogManager::applyEnvironmentLogLevel();
 
-    // --- Run application or tests ---
+            // --- Run application or tests ---
     const auto run = [&]() -> int {
         using QGCCommandLineParser::AppMode;
         switch (QGCCommandLineParser::determineAppMode(args)) {
 #ifdef QGC_UNITTEST_BUILD
-        case AppMode::ListTests:
-        case AppMode::Test:
-            return QGCUnitTest::handleTestOptions(args);
+            case AppMode::ListTests:
+            case AppMode::Test:
+                return QGCUnitTest::handleTestOptions(args);
 #endif
-        case AppMode::BootTest:
-            if (!app.bootTestPassed()) {
-                qCCritical(MainLog) << "Simple boot test failed";
-                return EXIT_FAILURE;
-            }
-            qCInfo(MainLog) << "Simple boot test completed";
-            return EXIT_SUCCESS;
-        case AppMode::Gui:
-            qCInfo(MainLog) << "Starting application event loop";
-            return app.exec();
+            case AppMode::BootTest:
+                if (!app.bootTestPassed()) {
+                    qCCritical(MainLog) << "Simple boot test failed";
+                    return EXIT_FAILURE;
+                }
+                qCInfo(MainLog) << "Simple boot test completed";
+                return EXIT_SUCCESS;
+            case AppMode::Gui:
+                qCInfo(MainLog) << "Starting application event loop";
+                return app.exec();
         }
         Q_UNREACHABLE();
     };
 
     const int exitCode = run();
 
-    // --- Cleanup ---
+            // --- Cleanup ---
     app.shutdown();
 
     qCInfo(MainLog) << "Exiting main";
 
-    // Destroy LogManager while Qt is still fully functional (before static destruction).
+            // Destroy LogManager while Qt is still fully functional (before static destruction).
     delete LogManager::instance();
 
     return exitCode;

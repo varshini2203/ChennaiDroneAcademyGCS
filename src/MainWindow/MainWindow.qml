@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import QtQuick.Window
 
 import QGroundControl
+import QGroundControl.Auth
 import QGroundControl.Controls
 import QGroundControl.FactControls
 import QGroundControl.FlyView
@@ -29,8 +30,19 @@ ApplicationWindow {
     rightPadding:  0
 
     Component.onCompleted: {
-        // Start the sequence of first run prompt(s)
-        firstRunPromptManager.nextPrompt()
+        // First run prompts are deferred until the user has logged in
+        if (AuthController.loggedIn) {
+            firstRunPromptManager.nextPrompt()
+        }
+    }
+
+    Connections {
+        target: AuthController
+        function onLoggedInChanged() {
+            if (AuthController.loggedIn) {
+                firstRunPromptManager.nextPrompt()
+            }
+        }
     }
 
     /// Saves main window position and size and re-opens it in the same position and size next time
@@ -810,6 +822,159 @@ ApplicationWindow {
                 }
                 source = ""
                 Qt.callLater(destroy)
+            }
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    //-- Splash Screen Overlay
+
+    property bool _splashDone: false
+
+    Rectangle {
+        id:             splashScreenOverlay
+        anchors.fill:   parent
+        z:              20000
+        color:          "#1b1c1d"
+        visible:        opacity > 0
+        opacity:        1.0
+
+        // Swallow all input while the splash is up
+        MouseArea {
+            anchors.fill:   parent
+            hoverEnabled:   true
+            acceptedButtons: Qt.AllButtons
+            onWheel:        function(wheel) { wheel.accepted = true }
+        }
+
+        ColumnLayout {
+            anchors.centerIn: parent
+            spacing: 12
+
+            Label {
+                text: qsTr("Chennai Drone Academy")
+                color: "white"
+                font.pointSize: 26
+                font.bold: true
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            BusyIndicator {
+                running: splashScreenOverlay.opacity > 0
+                Layout.alignment: Qt.AlignHCenter
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 500
+                onFinished: {
+                    if (splashScreenOverlay.opacity === 0) {
+                        mainWindow._splashDone = true
+                    }
+                }
+            }
+        }
+
+        Timer {
+            interval:   1500
+            running:    true
+            repeat:     false
+            onTriggered: splashScreenOverlay.opacity = 0
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    //-- Logout Button
+
+    Rectangle {
+        id:             logoutButton
+        anchors.left:   parent.left
+        anchors.bottom: parent.bottom
+        anchors.margins: 12
+        z:              21000
+        visible:        AuthController.loggedIn
+        width:          logoutLabel.implicitWidth + 24
+        height:         logoutLabel.implicitHeight + 16
+        radius:         4
+        color:          logoutMouseArea.pressed ? "#c0392b" : "#e74c3c"
+
+        Label {
+            id:             logoutLabel
+            anchors.centerIn: parent
+            text:           qsTr("Logout (%1)").arg(AuthController.currentUser)
+            color:          "white"
+        }
+
+        MouseArea {
+            id:         logoutMouseArea
+            anchors.fill: parent
+            onClicked:  logoutConfirmDialog.open()
+        }
+
+        Dialog {
+            id:                 logoutConfirmDialog
+            title:              qsTr("Log Out")
+            modal:              true
+            anchors.centerIn:   Overlay.overlay
+            standardButtons:    Dialog.Yes | Dialog.No
+
+            Label {
+                text: qsTr("Are you sure you want to log out?")
+            }
+
+            onAccepted: AuthController.logout()
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    //-- Login / Register Overlay
+
+    Loader {
+        id:             authOverlay
+        // Popups/Drawers (e.g. indicatorDrawer below) default-parent themselves into
+        // Overlay.overlay, which QQC2 always paints above ApplicationWindow's normal
+        // content regardless of item z. A logout triggered from inside one of those
+        // (e.g. the toolbar's Logout menu item) would otherwise be shown *behind* the
+        // still-closing popup. Parenting here into the same overlay layer, with a z
+        // higher than any popup's, guarantees the login page is always on top.
+        parent:         Overlay.overlay
+        anchors.fill:   parent
+        z:              1000000
+        active:         !AuthController.loggedIn && mainWindow._splashDone
+        visible:        active
+
+        property bool showingRegister: false
+
+        // Always land back on the Login page (not a stale Register page) whenever
+        // the overlay reappears, e.g. after AuthController.logout().
+        onActiveChanged: if (active) showingRegister = false
+
+        // Force any open indicator drawer / popup closed immediately (no exit
+        // transition) the moment we log out, so it can't linger on top of the
+        // overlay layer while it animates out.
+        Connections {
+            target: AuthController
+            function onLoggedInChanged() {
+                if (!AuthController.loggedIn) {
+                    mainWindow.closeIndicatorDrawer()
+                }
+            }
+        }
+
+        sourceComponent: showingRegister ? registerComponent : loginComponent
+
+        Component {
+            id: loginComponent
+            LoginPage {
+                onRegisterRequested: authOverlay.showingRegister = true
+            }
+        }
+
+        Component {
+            id: registerComponent
+            RegisterPage {
+                onBackRequested: authOverlay.showingRegister = false
             }
         }
     }

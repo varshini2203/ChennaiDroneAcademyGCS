@@ -14,7 +14,7 @@ set(QGC_CUSTOM_DIR "custom" CACHE STRING "Custom build overlay directory, relati
 # Application Metadata
 # ============================================================================
 
-set(QGC_APP_NAME "QGroundControl" CACHE STRING "Application name")
+set(QGC_APP_NAME "ChennaiDroneAcademy" CACHE STRING "Application name")
 string(TIMESTAMP _copyright_year "%Y")
 set(QGC_APP_COPYRIGHT "Copyright (c) ${_copyright_year} QGroundControl. All rights reserved." CACHE STRING "Copyright notice")
 set(QGC_APP_DESCRIPTION "Open Source Ground Control App" CACHE STRING "Application description")
@@ -61,13 +61,6 @@ option(GIT_SUBMODULE "Update submodules during configuration" OFF)
 # ============================================================================
 # Dependency Resolution (system libraries vs CPM downloads)
 # ============================================================================
-# Lets packagers (FreeBSD Ports, flatpak, snap, Debian) build against system
-# libraries instead of fetching sources. These drive CPM's built-in switches:
-#   QGC_USE_SYSTEM_LIBS  -> find_package() first, fall back to CPM download.
-#   QGC_SYSTEM_LIBS_ONLY -> find_package() only; misses are hard configure errors.
-# Per-package FIND_PACKAGE_ARGUMENTS wiring is incremental (geographiclib is the
-# reference conversion): unconverted packages error under SYSTEM_LIBS_ONLY, and
-# packages needing the CPM source tree (qgc_require_cpm_added sites) fail either way.
 option(QGC_USE_SYSTEM_LIBS "Prefer system libraries (find_package) over CPM downloads" OFF)
 option(QGC_SYSTEM_LIBS_ONLY "Require system libraries; never download dependencies" OFF)
 
@@ -81,8 +74,6 @@ endif()
 # Link parallelism (Ninja only)
 set(QGC_LINK_PARALLEL_LEVEL 2 CACHE STRING "Maximum parallel link jobs (prevents OOM during LTO)")
 # ---- GStreamer SDK download / debug ----
-# Fail closed: only the SDK-download platforms (Android/macOS/iOS/Windows) hit this path;
-# Linux uses system pkg-config and never downloads, so ON is a no-op there.
 option(GStreamer_REQUIRE_CHECKSUM "Fail if an SDK download's checksum cannot be verified (set OFF to bypass)" ON)
 option(GStreamer_DEBUG "Print GStreamer CMake debug messages" OFF)
 set(QGC_GST_DOWNLOAD_TIMEOUT "" CACHE STRING "GStreamer SDK download wall-clock timeout (seconds, default 1200)")
@@ -98,28 +89,22 @@ set(QGC_VALGRIND_TIMEOUT_MULTIPLIER 20 CACHE STRING "Timeout multiplier for Valg
 # ============================================================================
 # Compression Format Options
 # ============================================================================
-# Core formats (gzip, xz, zstd, zip) are always enabled.
-# These optional formats are rarely used in the drone ecosystem.
-
 option(QGC_ENABLE_BZIP2 "Enable BZip2 decompression support" OFF)
 option(QGC_ENABLE_LZ4 "Enable LZ4 decompression support" OFF)
 
 # ============================================================================
 # Communication Options
 # ============================================================================
-
 option(QGC_NO_SERIAL_LINK "Disable serial port communication" OFF)
 
 # ============================================================================
 # Video Streaming Options
 # ============================================================================
-
 option(QGC_ENABLE_GST_VIDEOSTREAMING "Enable GStreamer video backend" ON)
 
 # ============================================================================
 # MAVLink Configuration
 # ============================================================================
-
 set(QGC_MAVLINK_GIT_REPO "https://github.com/mavlink/mavlink.git" CACHE STRING "MAVLink repository URL")
 set(QGC_MAVLINK_GIT_TAG "c409cf690454db6d3e004bd14173bc6c7ff1e0ff" CACHE STRING "MAVLink repository commit/tag")
 set(QGC_MAVLINK_DIALECT "all" CACHE STRING "MAVLink dialect")
@@ -128,11 +113,7 @@ set(QGC_MAVLINK_VERSION "2.0" CACHE STRING "MAVLink protocol version")
 # ============================================================================
 # Autopilot Plugin Configuration
 # ============================================================================
-
-# ArduPilot (APM) Plugin
 option(QGC_DISABLE_APM_PLUGIN_FACTORY "Disable ArduPilot plugin factory" OFF)
-
-# PX4 Plugin
 option(QGC_DISABLE_PX4_PLUGIN_FACTORY "Disable PX4 plugin factory" OFF)
 
 # ============================================================================
@@ -170,12 +151,8 @@ set(QGC_IOS_TARGETED_DEVICE_FAMILY "1,2" CACHE STRING "iOS targeted device famil
 # ----------------------------------------------------------------------------
 # Linux Platform
 # ----------------------------------------------------------------------------
-# Distro-aware defaults for native (non-Docker) builds. Docker builds pass these
-# explicitly via -D (see deploy/docker/entrypoint.sh), which overrides the cache.
 include(LinuxDistro)
 
-# Fedora/Arch glibc exceeds the AppImage floor (appimagelint noise there); native
-# package generator follows the distro (DEB/RPM via CPack, Arch via makepkg).
 set(_qgc_appimagelint_default ON)
 set(_qgc_cpack_default "")
 if(QGC_LINUX_DISTRO_FAMILY STREQUAL "debian")
@@ -195,10 +172,6 @@ set(QGC_APPIMAGE_APPRUN_PATH "${CMAKE_SOURCE_DIR}/deploy/linux/AppRun" CACHE FIL
 set(QGC_APPIMAGE_DESKTOP_ENTRY_PATH "${CMAKE_SOURCE_DIR}/deploy/linux/org.mavlink.qgroundcontrol.desktop.in" CACHE FILEPATH "AppImage desktop entry path")
 set(QGC_APPIMAGE_METADATA_PATH "${CMAKE_SOURCE_DIR}/deploy/linux/org.mavlink.qgroundcontrol.appdata.xml.in" CACHE FILEPATH "AppImage metadata path")
 set(QGC_APPIMAGE_APPDATA_DEVELOPER "qgroundcontrol" CACHE STRING "AppImage developer name")
-# Optional CPack native package built by the `qgc-package` target, alongside the
-# platform's default installer (AppImage / NSIS .exe / DMG). Empty = installer only.
-# WIN32/APPLE (not MACOS/LINUX) because Toolchain.cmake — which sets those — is
-# included after this file.
 if(WIN32)
     set(_qgc_cpack_strings "" "NSIS" "IFW" "TXZ")
 elseif(APPLE)
@@ -229,7 +202,6 @@ set(QML_IMPORT_PATH "${QT_QML_OUTPUT_DIRECTORY}" CACHE STRING "Additional QML im
 option(QT_SILENCE_MISSING_DEPENDENCY_TARGET_WARNING "Silence missing dependency warnings" OFF)
 option(QT_ENABLE_VERBOSE_DEPLOYMENT "Enable verbose deployment output" OFF)
 option(QT_DEBUG_FIND_PACKAGE "Print search paths when package not found" ON)
-# qmlls.ini writes into the source tree dirty the CI checkout.
 if(DEFINED ENV{CI})
     set(_qmlls_ini_default OFF)
 else()
@@ -243,20 +215,10 @@ option(QT_QML_GENERATE_QMLLINT "Run qmllint at build time" OFF)
 set(QGC_QT_DISABLE_DEPRECATED_UP_TO "0x060B00" CACHE STRING "Disable Qt APIs deprecated before this version")
 set(QGC_QT_ENABLE_STRICT_MODE_UP_TO "0x060B00" CACHE STRING "Enable strict Qt API mode up to this version")
 
-# Debug environment variables (uncomment to enable)
-# set(ENV{QT_DEBUG_PLUGINS} "1")
-# set(ENV{QML_IMPORT_TRACE} "1")
-
 # ============================================================================
 # CMake Package Manager (CPM)
 # ============================================================================
 
-# Uncomment to use named cache directories for better organization
-# set(CPM_USE_NAMED_CACHE_DIRECTORIES ON CACHE BOOL "Use package name subdirectories in CPM cache")
-
 # ============================================================================
 # CMake Configuration
 # ============================================================================
-
-# Uncomment for verbose package finding
-# option(CMAKE_FIND_DEBUG_MODE "Print search paths when finding packages" OFF)
