@@ -9,189 +9,257 @@ import QGroundControl.Auth
 ToolIndicatorPage {
     id: root
 
-    property real _toolButtonHeight: ScreenTools.defaultFontPixelHeight * 3
+    readonly property color _navBg:        "#FFFFFF"
+    readonly property color _navBgAlt:     "#FFFFFF"
+    readonly property color _activePill:   "#EDE9FE"
+    readonly property color _activeText:   "#6D5BD0"
+    readonly property color _textColor:    "#475569"
+    readonly property color _mutedText:    "#94A3B8"
+
+    // Best-effort guess at which view is currently active, used only to
+    // highlight the matching nav item. Falls back to "" (nothing highlighted)
+    // if none of these match -- harmless either way.
+    readonly property string _currentView: {
+        if (typeof mainWindow === "undefined") return ""
+        if (mainWindow.flyView && mainWindow.flyView.visible)   return "fly"
+        if (mainWindow.planView && mainWindow.planView.visible) return "plan"
+        if (mainWindow.geoView && mainWindow.geoView.visible)   return "geo"
+        if (mainWindow.toolDrawer && mainWindow.toolDrawer.visible) {
+            if (mainWindow.toolDrawer.toolTitle === qsTr("Analyze Tools"))            return "analyze"
+            if (mainWindow.toolDrawer.toolTitle === qsTr("Vehicle Configuration"))    return "configure"
+            if (mainWindow.toolDrawer.toolTitle === qsTr("Application Settings"))     return "settings"
+        }
+        return ""
+    }
 
     contentComponent: Component {
-        GridLayout {
-            columns: 2
-            columnSpacing: ScreenTools.defaultFontPixelWidth
-            rowSpacing: columnSpacing
-
-            SubMenuButton {
-                objectName: "toolbar_viewFly"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("Fly")
-                imageResource: "/res/FlyingPaperPlane.svg"
-                onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.closeIndicatorDrawer()
-                        mainWindow.showFlyView()
-                    }
-                }
-            }
-
-            SubMenuButton {
-                objectName: "toolbar_viewPlan"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("Plan")
-                imageResource: "/qmlimages/Plan.svg"
-                onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.closeIndicatorDrawer()
-                        mainWindow.showPlanView()
-                    }
-                }
-            }
-
-            SubMenuButton {
-                objectName: "toolbar_viewGeo"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("GeoView")
-                imageResource: "/InstrumentValueIcons/globe.svg"
-                visible: QGroundControl.settingsManager.geoViewSettings.enabled.rawValue
-                onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.closeIndicatorDrawer()
-                        mainWindow.showGeoView()
-                    }
-                }
-            }
-
-            SubMenuButton {
-                objectName: "toolbar_viewAnalyze"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("Analyze")
-                imageResource: "/qmlimages/Analyze.svg"
-                visible: QGroundControl.corePlugin.showAdvancedUI
-                onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.closeIndicatorDrawer()
-                        mainWindow.showAnalyzeTool()
-                    }
-                }
-            }
-
-            SubMenuButton {
-                id: setupButton
-                objectName: "toolbar_viewConfigure"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("Configure")
-                imageResource: "/res/GearWithPaperPlane.svg"
-                onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.closeIndicatorDrawer()
-                        mainWindow.showVehicleConfig()
-                    }
-                }
-            }
-
-            SubMenuButton {
-                id: settingsButton
-                objectName: "toolbar_viewSettings"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("Settings")
-                imageResource: "/res/QGCLogoWhite.svg"
-                visible: !QGroundControl.corePlugin.options.combineSettingsAndSetup
-                onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.closeIndicatorDrawer()
-                        mainWindow.showSettingsTool()
-                    }
-                }
-            }
-
-            SubMenuButton {
-                id: closeButton
-                objectName: "toolbar_viewClose"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("Close")
-                imageResource: "/res/OpenDoor.svg"
-                onClicked: {
-                    if (mainWindow.allowViewSwitch()) {
-                        mainWindow.closeIndicatorDrawer()
-                        // Route through the window close handler so the unsaved
-                        // mission / pending parameter / active connection checks
-                        // run, matching the desktop window-close behavior.
-                        mainWindow.close()
-                    }
-                }
-            }
-
-            SubMenuButton {
-                id: logoutButton
-                objectName: "toolbar_viewLogout"
-                implicitHeight: root._toolButtonHeight
-                Layout.fillWidth: true
-                text: qsTr("Logout")
-                imageResource: "/res/OpenDoor.svg"
-                onClicked: {
-                    console.log("[AUTH-DEBUG] toolbar Logout clicked, loggedIn before =", AuthController.loggedIn)
-                    mainWindow.closeIndicatorDrawer()
-                    AuthController.logout()
-                    console.log("[AUTH-DEBUG] toolbar Logout: AuthController.logout() returned, loggedIn after =", AuthController.loggedIn)
-                }
-            }
+        Rectangle {
+            id: navBar
+            implicitWidth:  navRow.implicitWidth + (ScreenTools.defaultFontPixelWidth * 2)
+            implicitHeight: navRow.implicitHeight + versionColumn.implicitHeight + (ScreenTools.defaultFontPixelHeight * 1.5)
+            radius:         ScreenTools.defaultFontPixelHeight * 1.2
+            color:          root._navBg
+            border.width:   1
+            border.color:   "#E2E8F0"
 
             ColumnLayout {
-                id: versionColumnLayout
-                Layout.fillWidth: true
-                Layout.columnSpan: 2
-                spacing: 0
+                anchors.fill:    parent
+                anchors.margins: ScreenTools.defaultFontPixelWidth * 0.75
+                spacing:         ScreenTools.defaultFontPixelHeight * 0.5
 
-                QGCLabel {
-                    id: versionLabel
+                RowLayout {
+                    id:      navRow
                     Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    text: qsTr("%1 Version").arg(QGroundControl.appName)
-                    font.pointSize: ScreenTools.smallFontPointSize
-                    wrapMode: QGCLabel.WordWrap
-                }
+                    spacing: ScreenTools.defaultFontPixelWidth * 0.5
 
-                QGCLabel {
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    text: QGroundControl.qgcVersion
-                    font.pointSize: ScreenTools.smallFontPointSize
-                    wrapMode: QGCLabel.WrapAnywhere
-                }
-
-                QGCLabel {
-                    Layout.fillWidth: true
-                    horizontalAlignment: Text.AlignHCenter
-                    text: QGroundControl.qgcAppDate
-                    font.pointSize: ScreenTools.smallFontPointSize
-                    wrapMode: QGCLabel.WrapAnywhere
-                    visible: QGroundControl.qgcDailyBuild
-
-                    QGCMouseArea {
-                        anchors.topMargin: -(parent.y - versionLabel.y)
-                        anchors.fill: parent
-
-                        onClicked: (mouse) => {
-                            if (mouse.modifiers & Qt.ControlModifier) {
-                                QGroundControl.corePlugin.showTouchAreas = !QGroundControl.corePlugin.showTouchAreas
-                                showTouchAreasNotification.open()
-                            } else if (ScreenTools.isMobile || mouse.modifiers & Qt.ShiftModifier) {
-                                mainWindow.closeIndicatorDrawer()
-                                if (!QGroundControl.corePlugin.showAdvancedUI) {
-                                    advancedModeOnConfirmation.open()
-                                } else {
-                                    advancedModeOffConfirmation.open()
+                    Repeater {
+                        model: [
+                            {
+                                key: "fly", objectName: "toolbar_viewFly", label: qsTr("Fly"),
+                                icon: "/res/FlyingPaperPlane.svg", visible: true,
+                                action: function() {
+                                    if (mainWindow.allowViewSwitch()) {
+                                        mainWindow.closeIndicatorDrawer()
+                                        mainWindow.showFlyView()
+                                    }
+                                }
+                            },
+                            {
+                                key: "plan", objectName: "toolbar_viewPlan", label: qsTr("Plan"),
+                                icon: "/qmlimages/Plan.svg", visible: true,
+                                action: function() {
+                                    if (mainWindow.allowViewSwitch()) {
+                                        mainWindow.closeIndicatorDrawer()
+                                        mainWindow.showPlanView()
+                                    }
+                                }
+                            },
+                            {
+                                key: "geo", objectName: "toolbar_viewGeo", label: qsTr("GeoView"),
+                                icon: "/InstrumentValueIcons/globe.svg",
+                                visible: QGroundControl.settingsManager.geoViewSettings.enabled.rawValue,
+                                action: function() {
+                                    if (mainWindow.allowViewSwitch()) {
+                                        mainWindow.closeIndicatorDrawer()
+                                        mainWindow.showGeoView()
+                                    }
+                                }
+                            },
+                            {
+                                key: "analyze", objectName: "toolbar_viewAnalyze", label: qsTr("Analyze"),
+                                icon: "/qmlimages/Analyze.svg",
+                                visible: QGroundControl.corePlugin.showAdvancedUI,
+                                action: function() {
+                                    if (mainWindow.allowViewSwitch()) {
+                                        mainWindow.closeIndicatorDrawer()
+                                        mainWindow.showAnalyzeTool()
+                                    }
+                                }
+                            },
+                            {
+                                key: "configure", objectName: "toolbar_viewConfigure", label: qsTr("Configure"),
+                                icon: "/res/GearWithPaperPlane.svg", visible: true,
+                                action: function() {
+                                    if (mainWindow.allowViewSwitch()) {
+                                        mainWindow.closeIndicatorDrawer()
+                                        mainWindow.showVehicleConfig()
+                                    }
+                                }
+                            },
+                            {
+                                key: "settings", objectName: "toolbar_viewSettings", label: qsTr("Settings"),
+                                icon: "/res/QGCLogoWhite.svg",
+                                visible: !QGroundControl.corePlugin.options.combineSettingsAndSetup,
+                                action: function() {
+                                    if (mainWindow.allowViewSwitch()) {
+                                        mainWindow.closeIndicatorDrawer()
+                                        mainWindow.showSettingsTool()
+                                    }
+                                }
+                            },
+                            {
+                                key: "close", objectName: "toolbar_viewClose", label: qsTr("Close"),
+                                icon: "/res/OpenDoor.svg", visible: true,
+                                action: function() {
+                                    if (mainWindow.allowViewSwitch()) {
+                                        mainWindow.closeIndicatorDrawer()
+                                        mainWindow.close()
+                                    }
+                                }
+                            },
+                            {
+                                key: "logout", objectName: "toolbar_viewLogout", label: qsTr("Logout"),
+                                icon: "/res/OpenDoor.svg", visible: true,
+                                action: function() {
+                                    console.log("[AUTH-DEBUG] toolbar Logout clicked, loggedIn before =", AuthController.loggedIn)
+                                    mainWindow.closeIndicatorDrawer()
+                                    AuthController.logout()
+                                    console.log("[AUTH-DEBUG] toolbar Logout: AuthController.logout() returned, loggedIn after =", AuthController.loggedIn)
                                 }
                             }
-                        }
+                        ]
 
-                        // This allows you to change this on mobile
-                        onPressAndHold: {
-                            QGroundControl.corePlugin.showTouchAreas = !QGroundControl.corePlugin.showTouchAreas
-                            showTouchAreasNotification.open()
+                        delegate: Item {
+                            id: navItemRoot
+                            visible:        modelData.visible
+                            Layout.fillWidth:       true
+                            Layout.preferredWidth:  implicitWidth
+                            implicitWidth:  navItemColumn.implicitWidth + ScreenTools.defaultFontPixelWidth * 1.6
+                            implicitHeight: navItemColumn.implicitHeight + ScreenTools.defaultFontPixelHeight
+
+                            readonly property bool _isActive: modelData.key === root._currentView
+
+                            Rectangle {
+                                id:     activePill
+                                anchors.centerIn: parent
+                                width:  navItemColumn.implicitWidth + ScreenTools.defaultFontPixelWidth * 1.6
+                                height: navItemColumn.implicitHeight + ScreenTools.defaultFontPixelHeight * 0.7
+                                radius: height * 0.5
+                                color:  navItemRoot._isActive ? root._activePill : (navMouseArea.pressed ? "#F1F5F9" : (navMouseArea.containsMouse ? "#F8FAFC" : "transparent"))
+
+                                Behavior on color {
+                                    ColorAnimation { duration: 120 }
+                                }
+                            }
+
+                            ColumnLayout {
+                                id:               navItemColumn
+                                anchors.centerIn: parent
+                                spacing:          ScreenTools.defaultFontPixelHeight * 0.25
+
+                                Image {
+                                    Layout.alignment:   Qt.AlignHCenter
+                                    source:             modelData.icon
+                                    sourceSize.width:   ScreenTools.defaultFontPixelHeight * 1.4
+                                    sourceSize.height:  ScreenTools.defaultFontPixelHeight * 1.4
+                                    fillMode:           Image.PreserveAspectFit
+                                }
+
+                                Label {
+                                    Layout.alignment:       Qt.AlignHCenter
+                                    text:                   modelData.label
+                                    color:                  navItemRoot._isActive ? root._activeText : root._textColor
+                                    font.pointSize:         ScreenTools.smallFontPointSize
+                                    font.bold:              navItemRoot._isActive
+                                    horizontalAlignment:    Text.AlignHCenter
+                                }
+                            }
+
+                            MouseArea {
+                                id:             navMouseArea
+                                objectName:     modelData.objectName
+                                anchors.fill:   parent
+                                hoverEnabled:   true
+                                onClicked:      modelData.action()
+                            }
+                        }
+                    }
+                }
+
+                // Thin divider between nav row and version footer
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: "#E2E8F0"
+                    opacity: 1.0
+                }
+
+                ColumnLayout {
+                    id: versionColumn
+                    Layout.fillWidth: true
+                    spacing: 0
+
+                    QGCLabel {
+                        id: versionLabel
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        text: qsTr("%1 Version").arg(QGroundControl.appName)
+                        font.pointSize: ScreenTools.smallFontPointSize
+                        color: root._mutedText
+                        wrapMode: QGCLabel.WordWrap
+                    }
+
+                    QGCLabel {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        text: QGroundControl.qgcVersion
+                        font.pointSize: ScreenTools.smallFontPointSize
+                        color: root._mutedText
+                        wrapMode: QGCLabel.WrapAnywhere
+                    }
+
+                    QGCLabel {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        text: QGroundControl.qgcAppDate
+                        font.pointSize: ScreenTools.smallFontPointSize
+                        color: root._mutedText
+                        wrapMode: QGCLabel.WrapAnywhere
+                        visible: QGroundControl.qgcDailyBuild
+
+                        QGCMouseArea {
+                            anchors.topMargin: -(parent.y - versionLabel.y)
+                            anchors.fill: parent
+
+                            onClicked: (mouse) => {
+                                if (mouse.modifiers & Qt.ControlModifier) {
+                                    QGroundControl.corePlugin.showTouchAreas = !QGroundControl.corePlugin.showTouchAreas
+                                    showTouchAreasNotification.open()
+                                } else if (ScreenTools.isMobile || mouse.modifiers & Qt.ShiftModifier) {
+                                    mainWindow.closeIndicatorDrawer()
+                                    if (!QGroundControl.corePlugin.showAdvancedUI) {
+                                        advancedModeOnConfirmation.open()
+                                    } else {
+                                        advancedModeOffConfirmation.open()
+                                    }
+                                }
+                            }
+
+                            // This allows you to change this on mobile
+                            onPressAndHold: {
+                                QGroundControl.corePlugin.showTouchAreas = !QGroundControl.corePlugin.showTouchAreas
+                                showTouchAreasNotification.open()
+                            }
                         }
                     }
                 }

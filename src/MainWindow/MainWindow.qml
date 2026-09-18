@@ -41,6 +41,7 @@ ApplicationWindow {
         function onLoggedInChanged() {
             console.log("[AUTH-DEBUG] MainWindow: loggedInChanged fired, loggedIn =", AuthController.loggedIn)
             if (AuthController.loggedIn) {
+                mainWindow.homeScreenActive = true
                 firstRunPromptManager.nextPrompt()
             }
         }
@@ -79,6 +80,9 @@ ApplicationWindow {
     }
 
     readonly property real      _topBottomMargins:          ScreenTools.defaultFontPixelHeight * 0.5
+
+    // True while the Home landing screen (with the Start button) is shown instead of the map/plan/etc views
+    property bool               homeScreenActive:           true
 
     //-------------------------------------------------------------------------
     //-- Global Scope Variables
@@ -147,6 +151,7 @@ ApplicationWindow {
     }
 
     function showPlanView() {
+        mainWindow.homeScreenActive = false
         flyView.visible = false
         planView.visible = true
         geoView.visible = false
@@ -154,6 +159,7 @@ ApplicationWindow {
     }
 
     function showFlyView() {
+        mainWindow.homeScreenActive = false
         flyView.visible = true
         planView.visible = false
         geoView.visible = false
@@ -161,10 +167,20 @@ ApplicationWindow {
     }
 
     function showGeoView() {
+        mainWindow.homeScreenActive = false
         flyView.visible = false
         planView.visible = false
         geoView.visible = true
         toolDrawer.visible = false
+    }
+
+    // Returns to the Home landing screen, hiding the map/plan/geo views
+    function showHomeScreen() {
+        flyView.visible = false
+        planView.visible = false
+        geoView.visible = false
+        toolDrawer.visible = false
+        mainWindow.homeScreenActive = true
     }
 
     function showTool(toolTitle, toolSource, toolIcon) {
@@ -352,6 +368,7 @@ ApplicationWindow {
         id:                     flyView
         objectName:             "mainView_fly"
         anchors.fill:           parent
+        visible:                false
     }
 
     PlanView {
@@ -366,6 +383,18 @@ ApplicationWindow {
         objectName:     "mainView_geo"
         anchors.fill:   parent
         visible:        false
+    }
+
+    HomeScreen {
+        id:                 homeScreen
+        objectName:         "mainView_home"
+        anchors.fill:       parent
+        visible:            mainWindow.homeScreenActive
+
+        onStartClicked:     mainWindow.showFlyView()
+        onPlanClicked:      mainWindow.showPlanView()
+        onAnalyzeClicked:   mainWindow.showAnalyzeTool()
+        onSettingsClicked:  mainWindow.showSettingsTool()
     }
 
     footer: LogReplayStatusBar {
@@ -848,22 +877,12 @@ ApplicationWindow {
             onWheel:        function(wheel) { wheel.accepted = true }
         }
 
-        ColumnLayout {
-            anchors.centerIn: parent
-            spacing: 12
-
-            Label {
-                text: qsTr("Chennai Drone Academy")
-                color: "white"
-                font.pointSize: 26
-                font.bold: true
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            BusyIndicator {
-                running: splashScreenOverlay.opacity > 0
-                Layout.alignment: Qt.AlignHCenter
-            }
+        Image {
+            id:                 splashLogo
+            anchors.fill:       parent
+            // Confirmed via qgcresources.qrc: this entry's alias has no file extension.
+            source:             "/res/SplashScreen"
+            fillMode:           Image.PreserveAspectFit
         }
 
         Behavior on opacity {
