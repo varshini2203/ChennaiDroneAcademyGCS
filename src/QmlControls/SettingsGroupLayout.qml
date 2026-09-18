@@ -27,6 +27,13 @@ ColumnLayout {
 
     property real _margins: ScreenTools.defaultFontPixelHeight / 2
 
+    readonly property var _badgeColors: ["#0ea5e9", "#7c3aed", "#f97316", "#ec4899", "#10b981", "#f59e0b"]
+    readonly property color _badgeColor: {
+        let h = 0
+        for (let i = 0; i < heading.length; i++) h = (h * 31 + heading.charCodeAt(i)) % _badgeColors.length
+        return _badgeColors[Math.abs(h) % _badgeColors.length]
+    }
+
     // We work with a y sorted list of children for divider visibility checks
     property var _ySortedChildren: {
         let arr = []
@@ -39,13 +46,32 @@ ColumnLayout {
     ColumnLayout {
         Layout.leftMargin:  _margins
         Layout.fillWidth:   true
-        spacing:            0
+        spacing:            ScreenTools.defaultFontPixelHeight / 3
         visible:            heading !== ""
 
-        QGCLabel {
-            text:           heading
-            font.pointSize: headingPointSize
-            font.bold:      true
+        RowLayout {
+            spacing: ScreenTools.defaultFontPixelWidth * 0.6
+
+            Rectangle {
+                width:      ScreenTools.defaultFontPixelHeight * 1.6
+                height:     width
+                radius:     width / 2
+                color:      control._badgeColor
+
+                QGCLabel {
+                    anchors.centerIn:   parent
+                    text:               heading.length > 0 ? heading.charAt(0).toUpperCase() : ""
+                    color:              "#ffffff"
+                    font.bold:          true
+                    font.pointSize:     ScreenTools.defaultFontPointSize
+                }
+            }
+
+            QGCLabel {
+                text:           heading
+                font.pointSize: headingPointSize + 1
+                font.bold:      true
+            }
         }
 
         QGCLabel {
@@ -62,10 +88,22 @@ ColumnLayout {
         Layout.fillWidth:   true
         implicitWidth:      _contentLayout.implicitWidth + (showBorder ? _margins * 2 : 0)
         implicitHeight:     _contentLayout.implicitHeight + (showBorder ? _margins * 2: 0)
-        color:              "transparent"
-        border.color:       outerBorderColor
+        color:              QGroundControl.globalPalette.window
+        border.color:       Qt.rgba(0.06, 0.44, 0.65, 0.15)
         border.width:       showBorder ? 1 : 0
-        radius:             ScreenTools.defaultFontPixelHeight / 2
+        radius:             ScreenTools.defaultFontPixelHeight * 0.75
+
+        // Soft drop-shadow illusion behind the card (no native shadow support in QML Rectangle)
+        Rectangle {
+            anchors.fill:       parent
+            anchors.margins:    -3
+            z:                  -1
+            radius:             parent.radius + 3
+            color:              "transparent"
+            border.width:       3
+            border.color:       Qt.rgba(0.06, 0.44, 0.65, 0.06)
+            visible:            showBorder
+        }
 
         Repeater {
             model: showDividers ? _ySortedChildren.length : 0
@@ -75,7 +113,7 @@ ColumnLayout {
                 y:          _contentItem ? (_contentItem.y + _contentItem.height + _margins + (showBorder ? _margins : 0)) : 0
                 width:      parent.width - (showBorder ? _margins * 2 : 0)
                 height:     1
-                color:      QGroundControl.globalPalette.groupBorder
+                color:      Qt.rgba(0.06, 0.44, 0.65, 0.18)
                 visible:    _contentItem ? _isContentItemVisible() : false
 
                 property var _contentItem: index < _ySortedChildren.length ? _ySortedChildren[index] : undefined

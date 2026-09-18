@@ -8,8 +8,14 @@ import QGroundControl.AppSettings
 
 Rectangle {
     id:     settingsView
-    color:  qgcPal.window
     z:      QGroundControl.zOrderTopMost
+
+    gradient: Gradient {
+        orientation: Gradient.Vertical
+        GradientStop { position: 0.0; color: "#eaf7fd" }
+        GradientStop { position: 0.35; color: "#ffffff" }
+        GradientStop { position: 1.0; color: "#ffffff" }
+    }
 
     readonly property real _defaultTextHeight:  ScreenTools.defaultFontPixelHeight
     readonly property real _defaultTextWidth:   ScreenTools.defaultFontPixelWidth
@@ -148,6 +154,18 @@ Rectangle {
     }
 
     SettingsPagesModel { id: settingsPagesModel }
+
+    Rectangle {
+        id:             sidebarBackground
+        anchors.fill:   leftPanel
+        anchors.margins: -_horizontalMargin / 2
+        radius:         ScreenTools.defaultFontPixelHeight * 0.75
+        gradient: Gradient {
+            orientation: Gradient.Vertical
+            GradientStop { position: 0.0; color: "#0ea5e9" }
+            GradientStop { position: 1.0; color: "#0369a1" }
+        }
+    }
 
     ColumnLayout {
         id:                 leftPanel
@@ -296,13 +314,13 @@ Rectangle {
                                 if (typeof rightPanel.item.sectionVisible !== "function") return true
                                 return rightPanel.item.sectionVisible(sectionIndex)
                             }
-                            property color textColor: sectionChecked || pressed ? qgcPal.buttonHighlightText : qgcPal.buttonText
+                            property color textColor: sectionChecked || pressed ? "#0ea5e9" : "#e0f2fe"
                             visible: sectionMatchesSearch && sectionContentVisible
 
                             background: Rectangle {
-                                color:   qgcPal.buttonHighlight
-                                opacity: sectionBtn.sectionChecked || sectionBtn.pressed ? 1 : sectionBtn.enabled && sectionBtn.hovered ? 0.2 : 0
-                                radius:  ScreenTools.defaultFontPixelWidth / 2
+                                color:   "#ffffff"
+                                opacity: sectionBtn.sectionChecked || sectionBtn.pressed ? 1 : sectionBtn.enabled && sectionBtn.hovered ? 0.15 : 0
+                                radius:  height / 2
                             }
 
                             contentItem: QGCLabel {
@@ -330,11 +348,58 @@ Rectangle {
         anchors.topMargin:      _verticalMargin
         anchors.bottomMargin:   _verticalMargin
         anchors.leftMargin:     _horizontalMargin
-        anchors.left:           leftPanel.right
+        anchors.left:           sidebarBackground.right
         anchors.top:            parent.top
         anchors.bottom:         parent.bottom
         width:                  1
         color:                  qgcPal.windowShade
+    }
+
+    //-- Header banner above the settings content
+    RowLayout {
+        id:                     contentHeader
+        anchors.leftMargin:     _horizontalMargin
+        anchors.rightMargin:    _horizontalMargin
+        anchors.topMargin:      _verticalMargin
+        anchors.left:           divider.right
+        anchors.right:          parent.right
+        anchors.top:            parent.top
+        spacing:                _horizontalMargin
+
+        Rectangle {
+            width:  ScreenTools.defaultFontPixelHeight * 2.6
+            height: width
+            radius: width / 2
+            gradient: Gradient {
+                orientation: Gradient.Vertical
+                GradientStop { position: 0.0; color: "#38bdf8" }
+                GradientStop { position: 1.0; color: "#0ea5e9" }
+            }
+
+            QGCLabel {
+                anchors.centerIn:   parent
+                text:               "\u2699"
+                color:              "#ffffff"
+                font.pointSize:     ScreenTools.defaultFontPointSize * 1.6
+            }
+        }
+
+        ColumnLayout {
+            spacing: 0
+
+            QGCLabel {
+                text:           qsTr("Application Settings")
+                font.pointSize: ScreenTools.defaultFontPointSize * 1.4
+                font.bold:      true
+                color:          "#0f2c42"
+            }
+
+            QGCLabel {
+                text:           qsTr("Configure your drone system and application preferences")
+                font.pointSize: ScreenTools.smallFontPointSize
+                color:          "#7c95a6"
+            }
+        }
     }
 
     //-- Panel Contents
@@ -347,7 +412,7 @@ Rectangle {
         anchors.bottomMargin:   _verticalMargin
         anchors.left:           divider.right
         anchors.right:          parent.right
-        anchors.top:            parent.top
+        anchors.top:            contentHeader.bottom
         anchors.bottom:         parent.bottom
     }
 }

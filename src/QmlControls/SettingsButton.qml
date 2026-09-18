@@ -7,12 +7,16 @@ import QGroundControl.Controls
 
 Button {
     id:             control
-    padding:        ScreenTools.defaultFontPixelWidth * 0.75
+    padding:        ScreenTools.defaultFontPixelWidth * 0.6
+    leftPadding:    ScreenTools.defaultFontPixelWidth * 0.6
+    rightPadding:   ScreenTools.defaultFontPixelWidth * 0.6
     hoverEnabled:   !ScreenTools.isMobile
     autoExclusive:  true
     icon.color:     textColor
 
-    property color textColor: checked || pressed ? qgcPal.buttonHighlightText : qgcPal.buttonText
+    // This button now always sits on the sidebar's blue gradient panel (see AppSettings.qml),
+    // so text/icons are white normally, and the selected item gets a white pill with blue text.
+    property color textColor: checked || pressed ? "#0ea5e9" : "#ffffff"
     property bool expandable: false
     property bool expanded:   false
 
@@ -24,19 +28,27 @@ Button {
     }
 
     background: Rectangle {
-        color:      qgcPal.buttonHighlight
-        opacity:    checked || pressed ? 1 : enabled && hovered ? .2 : 0
-        radius:     ScreenTools.defaultFontPixelWidth / 2
+        color:      checked || pressed ? "#ffffff" : "#ffffff"
+        opacity:    checked || pressed ? 1 : enabled && hovered ? .15 : 0
+        radius:     height / 2
     }
 
     contentItem: RowLayout {
-        spacing: ScreenTools.defaultFontPixelWidth
+        spacing: ScreenTools.defaultFontPixelWidth * 0.75
 
-        QGCColoredImage {
-            source: control.icon.source
-            color:  control.icon.color
-            width:  ScreenTools.defaultFontPixelHeight
-            height: ScreenTools.defaultFontPixelHeight
+        Rectangle {
+            width:          ScreenTools.defaultFontPixelHeight * 1.6
+            height:         width
+            radius:         width / 2
+            color:          "transparent"
+
+            QGCColoredImage {
+                anchors.centerIn:   parent
+                source:             control.icon.source
+                color:              control.icon.color
+                width:              ScreenTools.defaultFontPixelHeight * 0.9
+                height:             width
+            }
         }
 
         QGCLabel {
@@ -44,6 +56,7 @@ Button {
             Layout.fillWidth:       true
             text:                   control.text
             color:                  control.textColor
+            font.bold:              control.checked
             horizontalAlignment:    QGCLabel.AlignLeft
         }
 
