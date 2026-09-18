@@ -1,226 +1,357 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Effects
 
-import QGroundControl
-import QGroundControl.Controls
-
-// HomeScreen
-//      Landing page shown after login, before the map. A bottom navigation bar
-//      lets you jump straight to Plan/Analyze/Settings, while the Start button
-//      takes you into the Fly (map) view.
+// ----------------------------------------------------------------------------
+// Light blue / white instrument-panel home screen.
+// Drop this in as MainWindow/HomeScreen.qml.
+// ----------------------------------------------------------------------------
 Item {
-    id: root
+    id: homeScreen
+    anchors.fill: parent
 
-    signal startClicked
-    signal planClicked
-    signal analyzeClicked
-    signal settingsClicked
+    signal startClicked()
+    signal homeClicked()
+    signal planClicked()
+    signal analyzeClicked()
+    signal settingsClicked()
 
-    readonly property color _bg:           "#F0F9FF"
-    readonly property color _skyLight:     "#7DD3FC"
-    readonly property color _sky:          "#38BDF8"
-    readonly property color _skyDeep:      "#0284C7"
-    readonly property color _navActiveBg:  "#FFFFFF"
-    readonly property color _navText:      "#F0F9FF"
-    readonly property color _textColor:    "#0F172A"
-    readonly property color _mutedText:    "#64748B"
+    property int currentNavIndex: 0
 
-    // ---- Page background ---------------------------------------------------
+    readonly property color skyTop:       "#E4F2FC"
+    readonly property color skyBottom:    "#FFFFFF"
+    readonly property color panel:        "#FFFFFF"
+    readonly property color hairline:     "#D5E6F5"
+    readonly property color textPrimary:  "#0F2A44"
+    readonly property color textSecondary:"#6C8AA5"
+    readonly property color accent:       "#1E88E5"
+    readonly property color accentDeep:   "#0F5FA8"
+    readonly property color accentLight:  "#64B5F6"
+
+    // ---- Background -----------------------------------------------------
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: "#FFFFFF" }
-            GradientStop { position: 1.0; color: root._bg }
+            GradientStop { position: 0.0; color: homeScreen.skyTop }
+            GradientStop { position: 1.0; color: homeScreen.skyBottom }
         }
     }
 
-    // ---- Bottom navigation bar ---------------------------------------------
+    // Soft glow behind the badge
     Rectangle {
-        id:             bottomNav
-        anchors.left:   parent.left
-        anchors.right:  parent.right
-        anchors.bottom: parent.bottom
-        height:         navRow.implicitHeight + ScreenTools.defaultFontPixelHeight * 1.6
+        width: 480; height: 480; radius: width / 2
+        anchors.centerIn: badge
+        color: homeScreen.accentLight
+        opacity: 0.14
+        layer.enabled: true
+        layer.effect: MultiEffect { blurEnabled: true; blur: 1.0; blurMax: 64 }
+    }
 
-        gradient: Gradient {
-            orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: root._skyLight }
-            GradientStop { position: 1.0; color: root._sky }
-        }
+    // ---- Center content ---------------------------------------------------
+    ColumnLayout {
+        anchors.centerIn: parent
+        spacing: 26
 
-        // Subtle top highlight so the bar reads as a distinct raised dock
-        Rectangle {
-            anchors.left:   parent.left
-            anchors.right:  parent.right
-            anchors.top:    parent.top
-            height:         2
-            color:          "#FFFFFF"
-            opacity:        0.6
-        }
+        // ---- Instrument badge ----------------------------------------
+        Item {
+            id: badge
+            Layout.alignment: Qt.AlignHCenter
+            width: 148; height: 148
 
-        Row {
-            id:                 navRow
-            anchors.centerIn:   parent
-            spacing:            ScreenTools.defaultFontPixelWidth * 3
+            Canvas {
+                id: ring
+                anchors.fill: parent
+                onPaint: {
+                    var ctx = getContext("2d")
+                    ctx.reset()
+                    var cx = width / 2, cy = height / 2, r = width / 2 - 6
 
-            Repeater {
-                model: [
-                    { key: "home",     objectName: "home_navHome",     label: qsTr("Home"),     icon: "/res/QGCLogoWhite.svg",      action: function() { } },
-                    { key: "plan",     objectName: "home_navPlan",     label: qsTr("Plan"),     icon: "/qmlimages/Plan.svg",         action: function() { root.planClicked() } },
-                    { key: "analyze",  objectName: "home_navAnalyze",  label: qsTr("Analyze"),  icon: "/qmlimages/Analyze.svg",      action: function() { root.analyzeClicked() } },
-                    { key: "settings", objectName: "home_navSettings", label: qsTr("Settings"), icon: "/res/GearWithPaperPlane.svg", action: function() { root.settingsClicked() } }
-                ]
+                    // outer bezel
+                    ctx.beginPath()
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2)
+                    ctx.lineWidth = 1.5
+                    ctx.strokeStyle = homeScreen.hairline
+                    ctx.stroke()
 
-                delegate: Item {
-                    id:     navItemRoot
-                    width:  navItemColumn.implicitWidth + ScreenTools.defaultFontPixelWidth * 2
-                    height: navItemColumn.implicitHeight + ScreenTools.defaultFontPixelHeight * 0.7
-
-                    readonly property bool _isActive: modelData.key === "home"
-
-                    Rectangle {
-                        anchors.centerIn:   parent
-                        width:              navItemColumn.implicitWidth + ScreenTools.defaultFontPixelWidth * 1.8
-                        height:             navItemColumn.implicitHeight + ScreenTools.defaultFontPixelHeight * 0.6
-                        radius:             height * 0.5
-                        color:              navItemRoot._isActive ? root._navActiveBg : "#FFFFFF"
-                        opacity:            navItemRoot._isActive ? 1.0 : (navMouseArea.containsMouse ? 0.25 : 0.0)
-
-                        Behavior on opacity {
-                            NumberAnimation { duration: 120 }
-                        }
+                    // tick marks
+                    ctx.strokeStyle = homeScreen.textSecondary
+                    for (var i = 0; i < 36; i++) {
+                        var a = (i / 36) * Math.PI * 2
+                        var long = i % 9 === 0
+                        var r1 = r - (long ? 12 : 6)
+                        ctx.beginPath()
+                        ctx.moveTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r)
+                        ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1)
+                        ctx.lineWidth = long ? 1.6 : 1
+                        ctx.stroke()
                     }
 
-                    ColumnLayout {
-                        id:                 navItemColumn
-                        anchors.centerIn:   parent
-                        spacing:            ScreenTools.defaultFontPixelHeight * 0.25
-
-                        Image {
-                            Layout.alignment:   Qt.AlignHCenter
-                            source:             modelData.icon
-                            sourceSize.width:   ScreenTools.defaultFontPixelHeight * 1.4
-                            sourceSize.height:  ScreenTools.defaultFontPixelHeight * 1.4
-                            fillMode:           Image.PreserveAspectFit
-                        }
-
-                        QGCLabel {
-                            Layout.alignment:       Qt.AlignHCenter
-                            text:                   modelData.label
-                            color:                  navItemRoot._isActive ? root._skyDeep : root._navText
-                            font.pointSize:         ScreenTools.smallFontPointSize
-                            font.bold:              navItemRoot._isActive
-                            horizontalAlignment:    Text.AlignHCenter
-                        }
-                    }
-
-                    MouseArea {
-                        id:             navMouseArea
-                        objectName:     modelData.objectName
-                        anchors.fill:   parent
-                        hoverEnabled:   true
-                        onClicked:      modelData.action()
-                    }
+                    // accent status arc (top-left quadrant)
+                    ctx.beginPath()
+                    ctx.arc(cx, cy, r + 4, Math.PI * 1.15, Math.PI * 1.55)
+                    ctx.lineWidth = 2.4
+                    ctx.strokeStyle = homeScreen.accent
+                    ctx.stroke()
                 }
             }
-        }
-    }
-
-    // ---- Main content: branding + Start button -----------------------------
-    ColumnLayout {
-        anchors.top:        parent.top
-        anchors.left:       parent.left
-        anchors.right:      parent.right
-        anchors.bottom:     bottomNav.top
-        anchors.margins:    ScreenTools.defaultFontPixelHeight
-
-        ColumnLayout {
-            Layout.alignment:   Qt.AlignHCenter
-            Layout.topMargin:   ScreenTools.defaultFontPixelHeight * 3
-            spacing:            ScreenTools.defaultFontPixelHeight * 0.75
 
             Rectangle {
-                Layout.alignment:   Qt.AlignHCenter
-                width:              ScreenTools.defaultFontPixelHeight * 7.5
-                height:             width
-                radius:             width * 0.5
-                color:              "#FFFFFF"
-                border.width:       2
-                border.color:       root._skyLight
+                anchors.centerIn: parent
+                width: 96; height: 96; radius: width / 2
+                color: homeScreen.panel
+                border.width: 1
+                border.color: homeScreen.hairline
 
-                Image {
-                    anchors.centerIn:   parent
-                    source:             "/res/QGCLogoWhite.svg"
-                    sourceSize.width:   parent.width * 0.72
-                    sourceSize.height:  parent.height * 0.72
-                    fillMode:           Image.PreserveAspectFit
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: "#301E88E5"
+                    shadowBlur: 0.4
+                    shadowVerticalOffset: 3
                 }
-            }
 
-            QGCLabel {
-                Layout.alignment:   Qt.AlignHCenter
-                Layout.topMargin:   ScreenTools.defaultFontPixelHeight * 0.5
-                text:               QGroundControl.appName
-                font.pointSize:     ScreenTools.largeFontPointSize
-                font.bold:          true
-                color:              root._textColor
-            }
+                Canvas {
+                    id: droneIcon
+                    anchors.centerIn: parent
+                    width: 52; height: 52
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.reset()
+                        ctx.lineWidth = 2
+                        ctx.strokeStyle = homeScreen.accentDeep
+                        ctx.fillStyle = homeScreen.accent
 
-            QGCLabel {
-                Layout.alignment:   Qt.AlignHCenter
-                text:               qsTr("Ready when you are")
-                font.pointSize:     ScreenTools.defaultFontPointSize
-                color:              root._mutedText
+                        var cx = width / 2, cy = height / 2
+                        ctx.beginPath()
+                        ctx.moveTo(cx - 18, cy - 18); ctx.lineTo(cx - 6, cy - 6)
+                        ctx.moveTo(cx + 18, cy - 18); ctx.lineTo(cx + 6, cy - 6)
+                        ctx.moveTo(cx - 18, cy + 18); ctx.lineTo(cx - 6, cy + 6)
+                        ctx.moveTo(cx + 18, cy + 18); ctx.lineTo(cx + 6, cy + 6)
+                        ctx.stroke()
+
+                        ctx.beginPath()
+                        ctx.rect(cx - 6, cy - 3.5, 12, 7)
+                        ctx.fill()
+
+                        var pts = [[cx - 18, cy - 18], [cx + 18, cy - 18],
+                                   [cx - 18, cy + 18], [cx + 18, cy + 18]]
+                        ctx.strokeStyle = homeScreen.accentDeep
+                        for (var i = 0; i < pts.length; i++) {
+                            ctx.beginPath()
+                            ctx.arc(pts[i][0], pts[i][1], 7, 0, Math.PI * 2)
+                            ctx.stroke()
+                        }
+                    }
+                }
             }
         }
 
-        Item { Layout.fillHeight: true }
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+            text: "Chennai Drone Academy"
+            font.pixelSize: 27
+            font.weight: Font.DemiBold
+            font.letterSpacing: 0.3
+            color: homeScreen.textPrimary
+        }
 
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+            text: "Ready when you are"
+            font.pixelSize: 14
+            color: homeScreen.textSecondary
+        }
+
+        Item { Layout.preferredHeight: 6 }
+
+        // ---- Start pill --------------------------------------------------
         Rectangle {
-            id:                 startButton
-            objectName:         "home_startButton"
-            Layout.alignment:   Qt.AlignHCenter
-            width:              Math.max(startRow.implicitWidth + ScreenTools.defaultFontPixelWidth * 4, ScreenTools.defaultFontPixelWidth * 22)
-            height:             startRow.implicitHeight + ScreenTools.defaultFontPixelHeight * 1.5
-
-            radius:             height * 0.5
+            id: startButton
+            Layout.alignment: Qt.AlignHCenter
+            width: 190; height: 54; radius: 12
 
             gradient: Gradient {
-                orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: startMouseArea.pressed ? root._skyDeep : root._sky }
-                GradientStop { position: 1.0; color: root._skyDeep }
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: homeScreen.accentLight }
+                GradientStop { position: 1.0; color: homeScreen.accentDeep }
+            }
+
+            scale: startMouse.pressed ? 0.97 : 1.0
+            Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutQuad } }
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowColor: "#401E88E5"
+                shadowBlur: 0.5
+                shadowVerticalOffset: 6
             }
 
             RowLayout {
-                id:                 startRow
-                anchors.centerIn:   parent
-                spacing:            ScreenTools.defaultFontPixelWidth * 0.75
+                anchors.centerIn: parent
+                spacing: 10
 
-                Image {
-                    source:             "/res/FlyingPaperPlane.svg"
-                    sourceSize.width:   ScreenTools.defaultFontPixelHeight * 1.2
-                    sourceSize.height:  ScreenTools.defaultFontPixelHeight * 1.2
-                    fillMode:           Image.PreserveAspectFit
+                Canvas {
+                    width: 14; height: 14
+                    Layout.alignment: Qt.AlignVCenter
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.reset()
+                        ctx.fillStyle = "white"
+                        ctx.beginPath()
+                        ctx.moveTo(0, 0); ctx.lineTo(14, 7); ctx.lineTo(0, 14)
+                        ctx.closePath()
+                        ctx.fill()
+                    }
                 }
-
-                QGCLabel {
-                    text:               qsTr("Start")
-                    font.pointSize:     ScreenTools.mediumFontPointSize
-                    font.bold:          true
-                    color:              "#FFFFFF"
+                Text {
+                    text: "Start"
+                    color: "white"
+                    font.pixelSize: 17
+                    font.weight: Font.DemiBold
                 }
             }
 
             MouseArea {
-                id:             startMouseArea
-                objectName:     "home_startMouseArea"
-                anchors.fill:   parent
-                onClicked:      root.startClicked()
+                id: startMouse
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: homeScreen.startClicked()
             }
         }
+    }
 
-        Item { Layout.fillHeight: true }
+    // ---- Bottom instrument strip -----------------------------------------
+    Rectangle {
+        id: navBar
+        height: 84
+        color: homeScreen.panel
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: "#1E88E522"
+            shadowBlur: 0.4
+            shadowVerticalOffset: -2
+        }
+
+        Rectangle {
+            anchors.top: parent.top
+            width: parent.width; height: 1
+            color: homeScreen.hairline
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: 0
+
+            Repeater {
+                model: [
+                    { label: "Home",    kind: "home" },
+                    { label: "Plan",    kind: "plan" },
+                    { label: "Analyze", kind: "analyze" },
+                    { label: "Settings",kind: "settings" }
+                ]
+
+                delegate: Item {
+                    id: navItem
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    property bool active: index === homeScreen.currentNavIndex
+
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        spacing: 6
+
+                        Canvas {
+                            id: navIcon
+                            Layout.alignment: Qt.AlignHCenter
+                            width: 22; height: 22
+                            property bool isActive: navItem.active
+                            onIsActiveChanged: requestPaint()
+
+                            onPaint: {
+                                var ctx = getContext("2d")
+                                ctx.reset()
+                                var c = isActive ? homeScreen.accent : homeScreen.textSecondary
+                                ctx.strokeStyle = c
+                                ctx.fillStyle = c
+                                ctx.lineWidth = 1.8
+                                var w = width, h = height
+
+                                if (modelData.kind === "home") {
+                                    ctx.beginPath()
+                                    ctx.moveTo(2, 11); ctx.lineTo(w/2, 2); ctx.lineTo(w-2, 11)
+                                    ctx.stroke()
+                                    ctx.strokeRect(5, 11, w-10, h-13)
+                                } else if (modelData.kind === "plan") {
+                                    ctx.beginPath()
+                                    ctx.arc(w/2, h/2, w/2 - 2, 0, Math.PI * 2)
+                                    ctx.stroke()
+                                    ctx.beginPath()
+                                    ctx.moveTo(w/2 - 4, h/2 + 4); ctx.lineTo(w/2 + 2, h/2 - 6)
+                                    ctx.lineTo(w/2 + 4, h/2 - 4); ctx.lineTo(w/2 - 2, h/2 + 6)
+                                    ctx.closePath()
+                                    ctx.fill()
+                                } else if (modelData.kind === "analyze") {
+                                    ctx.fillRect(2, h-9, 4, 9)
+                                    ctx.fillRect(w/2-2, h-14, 4, 14)
+                                    ctx.fillRect(w-6, h-6, 4, 6)
+                                } else if (modelData.kind === "settings") {
+                                    ctx.beginPath()
+                                    ctx.arc(w/2, h/2, 6, 0, Math.PI * 2)
+                                    ctx.stroke()
+                                    for (var i = 0; i < 8; i++) {
+                                        var a = (i / 8) * Math.PI * 2
+                                        var x1 = w/2 + Math.cos(a) * 8
+                                        var y1 = h/2 + Math.sin(a) * 8
+                                        var x2 = w/2 + Math.cos(a) * 11
+                                        var y2 = h/2 + Math.sin(a) * 11
+                                        ctx.beginPath()
+                                        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2)
+                                        ctx.stroke()
+                                    }
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: modelData.label
+                            font.pixelSize: 12
+                            font.weight: navItem.active ? Font.DemiBold : Font.Normal
+                            color: navItem.active ? homeScreen.accent : homeScreen.textSecondary
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            width: 18; height: 2
+                            radius: 1
+                            color: homeScreen.accent
+                            opacity: navItem.active ? 1.0 : 0.0
+                            Behavior on opacity { NumberAnimation { duration: 140 } }
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            homeScreen.currentNavIndex = index
+                            switch (modelData.label) {
+                            case "Home":     homeScreen.homeClicked();     break
+                            case "Plan":     homeScreen.planClicked();     break
+                            case "Analyze":  homeScreen.analyzeClicked();  break
+                            case "Settings": homeScreen.settingsClicked(); break
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

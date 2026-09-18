@@ -143,7 +143,7 @@ ToolIndicatorPage {
                             id: navItemRoot
                             visible:        modelData.visible
                             Layout.fillWidth:       true
-                            Layout.preferredWidth:  implicitWidth
+                            Layout.preferredWidth:  modelData.visible ? implicitWidth : 0
                             implicitWidth:  navItemColumn.implicitWidth + ScreenTools.defaultFontPixelWidth * 1.6
                             implicitHeight: navItemColumn.implicitHeight + ScreenTools.defaultFontPixelHeight
 
@@ -167,12 +167,19 @@ ToolIndicatorPage {
                                 anchors.centerIn: parent
                                 spacing:          ScreenTools.defaultFontPixelHeight * 0.25
 
-                                Image {
+                                // QGCColoredImage tints the SVG to a color we control,
+                                // instead of trusting whatever color is baked into the
+                                // source asset (several stock QGC icons are baked for a
+                                // dark toolbar and are invisible or near-invisible here).
+                                QGCColoredImage {
                                     Layout.alignment:   Qt.AlignHCenter
                                     source:             modelData.icon
                                     sourceSize.width:   ScreenTools.defaultFontPixelHeight * 1.4
                                     sourceSize.height:  ScreenTools.defaultFontPixelHeight * 1.4
+                                    width:              ScreenTools.defaultFontPixelHeight * 1.4
+                                    height:             ScreenTools.defaultFontPixelHeight * 1.4
                                     fillMode:           Image.PreserveAspectFit
+                                    color:              navItemRoot._isActive ? root._activeText : root._textColor
                                 }
 
                                 Label {
