@@ -33,9 +33,16 @@ Rectangle {
         visible: qgcPal.globalTheme === QGCPalette.Light
     }
 
+    BackToHomeButton {
+        id: backToHomeButton
+        anchors.left: parent.left
+        height: parent.height
+    }
+
     QGCToolBarButton {
         id: qgcButton
         objectName: "toolbar_qgcLogo"
+        anchors.left: backToHomeButton.right
         height: parent.height
         icon.source: "/res/QGCLogoFull.svg"
         logo: true

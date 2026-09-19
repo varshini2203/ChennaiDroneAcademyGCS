@@ -74,6 +74,11 @@ Item {
                         height:     parent.height
                         spacing:    0
 
+                        BackToHomeButton {
+                            id:                 backToHomeButton
+                            Layout.fillHeight:  true
+                        }
+
                         QGCToolBarButton {
                             id:                 qgcButton
                             objectName:         "toolbar_qgcLogo"

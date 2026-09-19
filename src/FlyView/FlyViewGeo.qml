@@ -28,8 +28,15 @@ Item {
         height: ScreenTools.toolbarHeight
         color: qgcPal.toolbarBackground
 
+        BackToHomeButton {
+            id: backToHomeButton
+            anchors.left: parent.left
+            height: parent.height
+        }
+
         QGCToolBarButton {
             objectName: "toolbar_qgcLogo"
+            anchors.left: backToHomeButton.right
             height: parent.height
             icon.source: "/res/QGCLogoFull.svg"
             logo: true

@@ -504,6 +504,11 @@ ApplicationWindow {
                 anchors.bottom:     parent.bottom
                 spacing:            ScreenTools.defaultFontPixelWidth
 
+                BackToHomeButton {
+                    id: backToHomeButton
+                    Layout.fillHeight: true
+                }
+
                 QGCToolBarButton {
                     id: qgcButton
                     objectName: "toolbar_qgcLogo"
