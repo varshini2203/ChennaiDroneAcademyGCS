@@ -17,7 +17,7 @@ ColumnLayout {
     property string defaultBorderColor  : QGroundControl.globalPalette.groupBorder
     property string outerBorderColor    : defaultBorderColor
 
-    property string defaultHeadingPointSize:    ScreenTools.defaultFontPointSize + 1
+    property string defaultHeadingPointSize:    ScreenTools.smallFontPointSize
     property string headingPointSize:           defaultHeadingPointSize
 
     property string heading
