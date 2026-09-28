@@ -185,7 +185,7 @@
             "shortDesc": "Enables the preflight checklist to help verify system status before flight.",
             "longDesc": "If this option is enabled the preflight checklist will be used.",
             "type": "bool",
-            "default": false,
+            "default": true,
             "label": "Use Preflight Checklist",
             "keywords": "checklist,preflight"
         },
@@ -194,7 +194,7 @@
             "shortDesc": "Prevents the vehicle from arming until all preflight checklist items pass.",
             "longDesc": "If this option is enabled the preflight checklist must pass before arming.",
             "type": "bool",
-            "default": false,
+            "default": true,
             "label": "Enforce Preflight Checklist",
             "keywords": "checklist,preflight"
         },

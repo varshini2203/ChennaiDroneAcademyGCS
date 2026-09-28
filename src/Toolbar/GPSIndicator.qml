@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import QGroundControl
 import QGroundControl.Controls
 
-// Used as the base class control for nboth VehicleGPSIndicator and RTKGPSIndicator
+// Used as the base class control for both VehicleGPSIndicator and RTKGPSIndicator
 
 Item {
     id:             control
@@ -14,6 +14,21 @@ Item {
 
     property var    _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
     property bool   _rtkConnected:  QGroundControl.gpsRtk.connected.value
+    property int    _satCount:      (_activeVehicle && !isNaN(_activeVehicle.gps.count.value)) ? _activeVehicle.gps.count.value : 0
+    property real   _hdop:          (_activeVehicle && !isNaN(_activeVehicle.gps.hdop.value)) ? _activeVehicle.gps.hdop.value : 0
+
+    // Satellite count mapped to a 0-100 signal percentage, reduced when HDOP is poor
+    property real   _gpsPercent: {
+        var p = 0
+        if (_satCount >= 12)        p = 100
+        else if (_satCount >= 9)    p = 80
+        else if (_satCount >= 6)    p = 60
+        else if (_satCount >= 4)    p = 40
+        else if (_satCount > 0)     p = 20
+        if (_hdop > 2.5 && p > 40)  p = 40
+        else if (_hdop > 1.5 && p > 60) p = 60
+        return p
+    }
 
     QGCPalette { id: qgcPal }
 
@@ -50,23 +65,19 @@ Item {
             }
         }
 
-        Column {
-            id:                     gpsValuesColumn
+        SignalStrength {
+            id:                     gpsBars
             anchors.verticalCenter: parent.verticalCenter
-            visible:                _activeVehicle && !isNaN(_activeVehicle.gps.hdop.value)
-            spacing:                0
+            size:                   parent.height * 0.5
+            percent:                _gpsPercent
+            visible:                !!_activeVehicle
+        }
 
-            QGCLabel {
-                anchors.horizontalCenter:   hdopValue.horizontalCenter
-                color:              qgcPal.text
-                text:               _activeVehicle ? _activeVehicle.gps.count.valueString : ""
-            }
-
-            QGCLabel {
-                id:     hdopValue
-                color:  qgcPal.text
-                text:   _activeVehicle ? _activeVehicle.gps.hdop.value.toFixed(1) : ""
-            }
+        QGCLabel {
+            anchors.verticalCenter: parent.verticalCenter
+            color:                  qgcPal.text
+            text:                   _satCount
+            visible:                !!_activeVehicle && !isNaN(_activeVehicle.gps.hdop.value)
         }
     }
 

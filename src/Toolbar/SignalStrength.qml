@@ -27,11 +27,19 @@ Item {
         return "/qmlimages/Signal100.svg"
     }
 
+    function getColor() {
+        if (percent >= 60)
+            return qgcPal.colorGreen
+        if (percent >= 30)
+            return qgcPal.colorYellow
+        return qgcPal.colorRed
+    }
+
     QGCColoredImage {
         source:             getIcon()
         fillMode:           Image.PreserveAspectFit
         anchors.fill:       parent
-        color:              qgcPal.buttonText
+        color:              getColor()
         sourceSize.height:  size
     }
 }
